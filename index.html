@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,6 +28,7 @@
             user-select: none;
             transition: transform 0.1s;
             overflow: hidden;
+            position: relative;
         }
         #clickArea img {
             width: 100%;
@@ -41,15 +42,29 @@
             font-size: 32px;
             margin-top: 20px;
         }
-        #upgradeButton {
-            margin-top: 20px;
+        .upgradeButton {
+            margin-top: 10px;
             padding: 10px 20px;
-            font-size: 18px;
+            font-size: 16px;
             background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+        }
+        .clickText {
+            position: absolute;
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 20px;
+            pointer-events: none;
+            animation: fadeOut 1s forwards;
+        }
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
         }
     </style>
 </head>
@@ -58,40 +73,60 @@
         <img src="Zel.png" alt="Click me!">
     </div>
     <div id="score">Очки: 0</div>
-    <button id="upgradeButton">Потужно (Цена: 10)</button>
+    <button id="upgradeClick" class="upgradeButton">Визит в Амеррику  (Цена: 10)</button>
+    <button id="upgradeAuto" class="upgradeButton">Нанять Ярмака (Цена: 50)</button>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
         let score = 0;
         let clickValue = 1;
-        let upgradeCost = 10;
+        let clickUpgradeCost = 10;
+        let autoClickValue = 0;
+        let autoUpgradeCost = 50;
 
         const clickArea = document.getElementById('clickArea');
         const scoreDisplay = document.getElementById('score');
-        const upgradeButton = document.getElementById('upgradeButton');
+        const upgradeClickButton = document.getElementById('upgradeClick');
+        const upgradeAutoButton = document.getElementById('upgradeAuto');
 
         clickArea.addEventListener('click', () => {
-            score += clickValue;
-            updateScore();
+            incrementScore(clickValue);
             animateClick();
+            showClickText();
         });
 
-        upgradeButton.addEventListener('click', () => {
-            if (score >= upgradeCost) {
-                score -= upgradeCost;
+        upgradeClickButton.addEventListener('click', () => {
+            if (score >= clickUpgradeCost) {
+                score -= clickUpgradeCost;
                 clickValue++;
-                upgradeCost = Math.round(upgradeCost * 1.5);
+                clickUpgradeCost = Math.round(clickUpgradeCost * 1.5);
                 updateScore();
-                updateUpgradeButton();
+                updateUpgradeButtons();
             }
         });
+
+        upgradeAutoButton.addEventListener('click', () => {
+            if (score >= autoUpgradeCost) {
+                score -= autoUpgradeCost;
+                autoClickValue++;
+                autoUpgradeCost = Math.round(autoUpgradeCost * 2);
+                updateScore();
+                updateUpgradeButtons();
+            }
+        });
+
+        function incrementScore(value) {
+            score += value;
+            updateScore();
+        }
 
         function updateScore() {
             scoreDisplay.textContent = `Очки: ${score}`;
         }
 
-        function updateUpgradeButton() {
-            upgradeButton.textContent = `Улучшить (Цена: ${upgradeCost})`;
+        function updateUpgradeButtons() {
+            upgradeClickButton.textContent = `Улучшить клик (Цена: ${clickUpgradeCost})`;
+            upgradeAutoButton.textContent = `Улучшить авто-клик (Цена: ${autoUpgradeCost})`;
         }
 
         function animateClick() {
@@ -100,6 +135,22 @@
                 clickArea.style.transform = 'scale(1)';
             }, 100);
         }
+
+        function showClickText() {
+            const text = document.createElement('div');
+            text.textContent = 'Потужно';
+            text.className = 'clickText';
+            text.style.left = `${Math.random() * 150}px`;
+            text.style.top = `${Math.random() * 150}px`;
+            clickArea.appendChild(text);
+            setTimeout(() => {
+                clickArea.removeChild(text);
+            }, 1000);
+        }
+
+        setInterval(() => {
+            incrementScore(autoClickValue);
+        }, 1000);
 
         // Инициализация Telegram Mini App
         telegram.WebApp.ready();
