@@ -38,7 +38,7 @@
         #clickArea:active {
             transform: scale(0.95);
         }
-        #score, #energy {
+        #score, #energy, #combo {
             font-size: 24px;
             margin-top: 10px;
         }
@@ -75,9 +75,12 @@
     </div>
     <div id="score">Очки: 0</div>
     <div id="energy">Енергія: 100 / 100</div>
+    <div id="combo">Комбо: 0</div>
     <button id="upgradeClick" class="upgradeButton">Дізнатися хто я (Ціна: 10)</button>
     <button id="upgradeAuto" class="upgradeButton">Нанять Ярмака (Ціна: 50)</button>
     <button id="upgradeEnergy" class="upgradeButton">Продати електрохарчування в Румунію (Ціна: 30)</button>
+
+    <audio id="clickSound" src="Zel.mp3"></audio>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
@@ -89,21 +92,40 @@
         let energy = 100;
         let maxEnergy = 100;
         let energyUpgradeCost = 30;
+        let combo = 0;
+        let lastClickTime = 0;
 
         const clickArea = document.getElementById('clickArea');
         const scoreDisplay = document.getElementById('score');
         const energyDisplay = document.getElementById('energy');
+        const comboDisplay = document.getElementById('combo');
         const upgradeClickButton = document.getElementById('upgradeClick');
         const upgradeAutoButton = document.getElementById('upgradeAuto');
         const upgradeEnergyButton = document.getElementById('upgradeEnergy');
+        const clickSound = document.getElementById('clickSound');
 
         clickArea.addEventListener('click', () => {
             if (energy > 0) {
-                incrementScore(clickValue);
+                const currentTime = new Date().getTime();
+                if (currentTime - lastClickTime < 500) {
+                    combo++;
+                    if (combo === 10) {
+                        score += 50; // Бонус за 10 быстрых кликов
+                        showClickText('КОМБО! +50', '#FF4500');
+                    }
+                } else {
+                    combo = 1;
+                }
+                lastClickTime = currentTime;
+
+                let pointsEarned = clickValue * combo;
+                incrementScore(pointsEarned);
                 energy = Math.max(0, energy - 1);
                 animateClick();
-                showClickText();
+                playClickSound();
+                showClickText(`+${pointsEarned}`);
                 updateEnergy();
+                updateCombo();
             }
         });
 
@@ -151,6 +173,10 @@
             energyDisplay.textContent = `Енергія: ${energy} / ${maxEnergy}`;
         }
 
+        function updateCombo() {
+            comboDisplay.textContent = `Комбо: ${combo}`;
+        }
+
         function updateUpgradeButtons() {
             upgradeClickButton.textContent = `Дізнатися хто я (Ціна: ${clickUpgradeCost})`;
             upgradeAutoButton.textContent = `Нанять Ярмака (Ціна: ${autoUpgradeCost})`;
@@ -164,15 +190,21 @@
             }, 100);
         }
 
-        function showClickText() {
-            const text = document.createElement('div');
-            text.textContent = 'Потужно';
-            text.className = 'clickText';
-            text.style.left = `${Math.random() * 150}px`;
-            text.style.top = `${Math.random() * 150}px`;
-            clickArea.appendChild(text);
+        function playClickSound() {
+            clickSound.currentTime = 0;
+            clickSound.play();
+        }
+
+        function showClickText(text, color = '#FFD700') {
+            const textElement = document.createElement('div');
+            textElement.textContent = text;
+            textElement.className = 'clickText';
+            textElement.style.color = color;
+            textElement.style.left = `${Math.random() * 150}px`;
+            textElement.style.top = `${Math.random() * 150}px`;
+            clickArea.appendChild(textElement);
             setTimeout(() => {
-                clickArea.removeChild(text);
+                clickArea.removeChild(textElement);
             }, 1000);
         }
 
@@ -188,6 +220,13 @@
             energy = Math.min(maxEnergy, energy + 1);
             updateEnergy();
         }, 5000);
+
+        setInterval(() => {
+            if (new Date().getTime() - lastClickTime > 2000) {
+                combo = 0;
+                updateCombo();
+            }
+        }, 500);
 
         // Инициализация Telegram Mini App
         telegram.WebApp.ready();
